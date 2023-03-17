@@ -10,6 +10,7 @@ module com.example.tpo1_sd_s23396 {
     requires org.kordamp.bootstrapfx.core;
     requires eu.hansolo.tilesfx;
     requires java.desktop;
+    requires com.fasterxml.jackson.databind;
 
     opens zad2 to javafx.fxml;
     exports zad2;

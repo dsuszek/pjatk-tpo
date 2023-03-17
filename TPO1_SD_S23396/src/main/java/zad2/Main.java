@@ -6,7 +6,7 @@ public class Main {
         Service s = new Service("Poland");
         String weatherJson = s.getWeather("Warsaw");
 //        Double rate1 = s.getRateFor("USD");
-//        Double rate2 = s.getNBPRate();
+        Double rate2 = s.getNBPRate();
 
         GUI.launch(GUI.class, args);
     }

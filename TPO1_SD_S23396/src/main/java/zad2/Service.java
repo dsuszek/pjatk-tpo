@@ -1,67 +1,41 @@
 package zad2;
 
-import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.URL;
-import java.util.Currency;
-import java.util.HashMap;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.w3c.dom.Document;
+import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpressionException;
+import javax.xml.xpath.XPathFactory;
 
 public class Service {
 
     private Map<String, String> mapOfCountries = new HashMap<>();
     private static Map<String, Currency> mapOfCurrencies = new HashMap<>();
     private String country;
+    private final String xmlNBPTableA = "https://static.nbp.pl/dane/kursy/xml/a053z230316.xml";
+    private final String xmlNBPTableB = "https://static.nbp.pl/dane/kursy/xml/b011z230315.xml";
 
     // Constructor with one parameter - name of country
     public Service(String country) {
         this.country = country;
     }
 
-    public static String makeRequest(String UrlAPI) throws IOException {
-
-        String s = "";
-
-        try {
-            URL url = new URL(UrlAPI);
-
-            try (BufferedReader in = new BufferedReader(new InputStreamReader(url.openStream(), "UTF-8"))) {
-                String line;
-                while ((line = in.readLine()) != null)
-                    s += line;
-            }
-            System.out.println(s);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return s;
-    }
-
-
-
-    public static String getCurrencyCode(String country) {
-        for (Locale locale : Locale.getAvailableLocales()) {
-            String country_key = locale.getCountry();
-            mapOfCurrencies.put(country_key, Currency.getInstance(locale));
-        }
-        return mapOfCurrencies.get(country).toString();
-    }
-
-    public void prepareMapOfCountries() {
-        for (String iso : Locale.getISOCountries()) {
-            Locale locale = new Locale("", iso);
-            mapOfCountries.put(locale.getDisplayCountry(), iso);
-        }
-    }
-
-    public String getCountryCode(String country) {
-        return mapOfCountries.get(country);
-    }
-
     /**
      * Zwraca informację o pogodzie w podanym mieście danego kraju w formacie JSON (to ma być pełna informacja uzyskana z serwisu openweather - po prostu tekst w formacie JSON).
+     *
      * @param city
      * @return
      */
@@ -76,39 +50,84 @@ public class Service {
         }
     }
 
+    public String getCurrCode(String country) {
+        for (Locale locale : Locale.getAvailableLocales()) {
+            if (locale.getDisplayCountry().equals(country)) {
+                Currency currency = Currency.getInstance(locale);
+
+                return currency.getCurrencyCode();
+            }
+        }
+        return null;
+    }
+
     public Double getRateFor(String currencyCode) {
-        String baseCurrencyCode = getCurrencyCode(country);
+        String baseCurrencyCode = getCurrCode(country);
 
         String url = String.format("https://api.exchangerate.host/convert?from=%s&to=%s", currencyCode, baseCurrencyCode);
-        String data;
+        String json;
 
         try {
-            data = makeRequest(url);
+            json = Connection.makeRequest(url);
         } catch (IOException e) {
             e.printStackTrace();
             return null;
         }
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode root = mapper.readTree(json);
+            List<String> filteredJSON = root
+                    .findValuesAsText("rate")
+                    .stream()
+                    .filter(rate -> Integer.parseInt(rate) > 0)
+                    .toList();
 
-       return Double.valueOf(data);
+            String rate = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(filteredJSON);
+
+            return Double.valueOf(rate);
+
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        } catch (NumberFormatException e) {
+            System.err.println("This is not a number.");
+        }
+
+        return null;
     }
 
-    public Double getNBPRate(String table) {
-        String currencyCode = getCurrencyCode(country);
+    public Double getNBPRate() {
+        String currencyCode = getCurrCode(country);
 
         // When we compare PLN to PLN, rate will always be 1.0
         if (currencyCode.equals("PLN")) {
             return 1d;
         }
 
-        String tableUrl = String.format("http://www.nbp.pl/kursy/kursya.html", table);
-        String tablePageData;
-
         try {
-            return Double.valueOf((Connection.makeRequest(tableUrl)));
-        } catch (IOException e) {
-            e.printStackTrace();
-            return null;
+            FileInputStream fileIS = new FileInputStream(xmlNBPTableA);
+            DocumentBuilderFactory builderFactory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder builder = builderFactory.newDocumentBuilder();
+            Document xmlDocument = builder.parse(fileIS);
+            XPath xPath = XPathFactory.newInstance().newXPath();
+            String expression = "kurs_sredni";
+            NodeList nodeList = (NodeList) xPath.compile(expression).evaluate(xmlDocument, XPathConstants.NODESET);
+            return Double.valueOf(String.valueOf(nodeList));
+        } catch (FileNotFoundException e1) {
+            System.out.println("XML table couldn't be loaded.");
+            e1.printStackTrace();
+        } catch (ParserConfigurationException e2) {
+            System.out.println("Parser configuration error.");
+            e2.printStackTrace();
+        } catch (IOException e3) {
+            System.out.println("IO Exception");
+            e3.printStackTrace();
+        } catch (XPathExpressionException e4) {
+            System.out.println("X path incorrect");
+            e4.printStackTrace();
+        } catch (SAXException e5) {
+            e5.printStackTrace();
         }
 
+        return null;
     }
 }
