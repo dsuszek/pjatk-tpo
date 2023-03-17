@@ -3,13 +3,18 @@ package zad2;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.StringReader;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.w3c.dom.Document;
+import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -26,7 +31,7 @@ public class Service {
     private static Map<String, Currency> mapOfCurrencies = new HashMap<>();
     protected static String country = null;
     private final String xmlNBPTableA = "https://static.nbp.pl/dane/kursy/xml/a053z230316.xml";
-    private final String xmlNBPTableB = "https://static.nbp.pl/dane/kursy/xml/b011z230315.xml";
+
 
     // Constructor with one parameter - name of country
     public Service(String country) {
@@ -45,13 +50,26 @@ public class Service {
      */
     String getWeather(String city) {
         String url = "https://api.openweathermap.org/data/2.5/weather?q=" + city + "&appid=0d1a33b85a66b2ec8437ebd21d77afc9";
+        String data;
 
         try {
-            return Connection.makeRequest(url);
+            data = Connection.makeRequest(url);
         } catch (IOException e) {
             e.printStackTrace();
             return null;
         }
+
+        ObjectMapper mapper = new ObjectMapper();
+
+        try {
+            JsonNode json = mapper.readTree(data);
+
+            return json.get("weather").get(0).get("description").asText();
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
+
+        return null;
     }
 
     public String getCurrCode(String country) {
@@ -82,7 +100,6 @@ public class Service {
             JsonNode root = mapper.readTree(json);
             double rate = root.path("info").path("rate").asDouble();
 
-            System.out.println(rate);
             return rate;
 
         } catch (JsonProcessingException e) {
@@ -96,6 +113,20 @@ public class Service {
 
     public Double getNBPRate() {
         String currencyCode = getCurrCode(country);
+        String data = null;
+
+        if (currencyCode == null) {
+            return null;
+        }
+
+        try {
+            data = Connection.makeRequest(xmlNBPTableA);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+
+        System.out.println(data);
 
         // When we compare PLN to PLN, rate will always be 1.0
         if (currencyCode.equals("PLN")) {
@@ -103,28 +134,42 @@ public class Service {
         }
 
         try {
-            FileInputStream fileIS = new FileInputStream(xmlNBPTableA);
             DocumentBuilderFactory builderFactory = DocumentBuilderFactory.newInstance();
             DocumentBuilder builder = builderFactory.newDocumentBuilder();
-            Document xmlDocument = builder.parse(fileIS);
+            Document doc = builder.parse(new InputSource(new StringReader(xmlNBPTableA)));
             XPath xPath = XPathFactory.newInstance().newXPath();
-            String expression = "kurs_sredni";
-            NodeList nodeList = (NodeList) xPath.compile(expression).evaluate(xmlDocument, XPathConstants.NODESET);
-            return Double.valueOf(String.valueOf(nodeList));
-        } catch (FileNotFoundException e1) {
-            System.out.println("XML table couldn't be loaded.");
-            e1.printStackTrace();
-        } catch (ParserConfigurationException e2) {
-            System.out.println("Parser configuration error.");
-            e2.printStackTrace();
-        } catch (IOException e3) {
-            System.out.println("IO Exception");
-            e3.printStackTrace();
-        } catch (XPathExpressionException e4) {
-            System.out.println("X path incorrect");
-            e4.printStackTrace();
-        } catch (SAXException e5) {
-            e5.printStackTrace();
+            String expression = String.format(
+                    "/tabela_kursow/pozycja[descendant::kod_waluty[text()=\"%s\"]]/kurs_sredni", currencyCode
+            );
+
+            NodeList nodeList = (NodeList) xPath.compile(expression).evaluate(doc, XPathConstants.NODESET);
+
+            if (nodeList.getLength() == 0) {
+                return null;
+            }
+
+            Node node = nodeList.item(0);
+            String textValue = node.getTextContent().replace(',', '.');
+            System.out.println(textValue);
+            Double value = Double.parseDouble(textValue);
+
+            return value;
+
+        } catch (XPathExpressionException e) {
+            e.printStackTrace();
+            System.out.println("XPathExpressionException");
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+            System.out.println("FileNotFoundException");
+        } catch (ParserConfigurationException e) {
+            e.printStackTrace();
+            System.out.println("ParserConfigurationException");
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.out.println("IOException");
+        } catch (SAXException e) {
+            e.printStackTrace();
+            System.out.println("SAXException");
         }
 
         return null;
