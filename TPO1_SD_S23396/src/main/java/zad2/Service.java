@@ -24,13 +24,17 @@ public class Service {
 
     private Map<String, String> mapOfCountries = new HashMap<>();
     private static Map<String, Currency> mapOfCurrencies = new HashMap<>();
-    private String country;
+    protected static String country = null;
     private final String xmlNBPTableA = "https://static.nbp.pl/dane/kursy/xml/a053z230316.xml";
     private final String xmlNBPTableB = "https://static.nbp.pl/dane/kursy/xml/b011z230315.xml";
 
     // Constructor with one parameter - name of country
     public Service(String country) {
         this.country = country;
+    }
+
+    public static String getCountry() {
+        return country;
     }
 
     /**
@@ -76,15 +80,10 @@ public class Service {
         try {
             ObjectMapper mapper = new ObjectMapper();
             JsonNode root = mapper.readTree(json);
-            List<String> filteredJSON = root
-                    .findValuesAsText("rate")
-                    .stream()
-                    .filter(rate -> Integer.parseInt(rate) > 0)
-                    .toList();
+            double rate = root.path("info").path("rate").asDouble();
 
-            String rate = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(filteredJSON);
-
-            return Double.valueOf(rate);
+            System.out.println(rate);
+            return rate;
 
         } catch (JsonProcessingException e) {
             e.printStackTrace();

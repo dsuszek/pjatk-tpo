@@ -19,7 +19,6 @@ public class Connection {
                 while ((line = in.readLine()) != null)
                     s += line;
             }
-            System.out.println(s);
         } catch (IOException e) {
             e.printStackTrace();
         }

@@ -8,6 +8,7 @@ import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
 import javafx.scene.web.WebEngine;
@@ -24,9 +25,10 @@ public class GUI extends Application {
 
     private WebView webView = new WebView();
     private WebEngine webEngine = webView.getEngine();
-    private Pane pane;
+    private VBox pane;
     private final String[] countriesList = getCountriesList();
     private final String[] currenciesList = getCurrenciesList();
+
 
 
     @Override
@@ -46,23 +48,8 @@ public class GUI extends Application {
 
         cityNameInput.setPromptText("Please enter name of city.");
         cityNameInput.setPrefSize(100, 30);
-        cityNameInput.setOnAction(
-                actionEvent -> cityNameInput.getText()
-        );
 
-        confirmButton.setOnAction(new EventHandler<ActionEvent>() {
-            @Override
-            public void handle(ActionEvent actionEvent) {
-                new Service(countryNameInput.getText());
-            }
-        });
-
-        Platform.runLater(() -> {
-                    webEngine.load("https://pl.wikipedia.org/wiki/Warszawa");
-                }
-        );
-
-        VBox pane = new VBox(10);
+        pane = new VBox(10);
         pane.setPadding(new Insets(10));
         pane.getChildren().addAll(
                 new Label("Enter country name: "),
@@ -74,13 +61,34 @@ public class GUI extends Application {
                 confirmButton,
                 webView);
 
+        GridPane results = new GridPane();
+        Label rateLabel = new Label();
+        results.setHgap(10);
+        results.add(rateLabel, 0, 0);
 
-        Scene scene = new Scene(pane, 800, 600);
+
+        confirmButton.setOnAction((ActionEvent e) -> {
+            String country = countryNameInput.getText();
+            String currency = currenciesComboBox.getValue();
+            String city = cityNameInput.getText();
+
+            Service service = new Service(country);
+
+            Platform.runLater(() -> {
+                        webEngine.load("https://en.wikipedia.org/wiki/" + city);
+                    }
+            );
+        });
+
+
+        Scene scene = new Scene(new VBox(pane, results), 800, 600);
         stage.setScene(scene);
         stage.show();
 
 
+
     }
+
 
 
     private String[] getCountriesList() {
@@ -121,6 +129,7 @@ public class GUI extends Application {
         return currenciesList
                 .toArray(new String[currenciesList.size()]);
     }
+
 
 
 }
