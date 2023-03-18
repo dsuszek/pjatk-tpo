@@ -1,13 +1,9 @@
 package zad2;
 
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -16,7 +12,6 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
-
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -29,18 +24,16 @@ public class Service {
 
     private Map<String, String> mapOfCountries = new HashMap<>();
     private static Map<String, Currency> mapOfCurrencies = new HashMap<>();
-    protected static String country = null;
-    private final String xmlNBPTableA = "https://static.nbp.pl/dane/kursy/xml/a053z230316.xml";
-
+    private String country = null;
+    private final String NBP_XML_BASIS_A = "https://static.nbp.pl/dane/kursy/xml/a054z230317.xml";
+    private final String NBP_XML_BASIS_B = "https://static.nbp.pl/dane/kursy/xml/b011z230315.xml";
 
     // Constructor with one parameter - name of country
     public Service(String country) {
         this.country = country;
     }
 
-    public static String getCountry() {
-        return country;
-    }
+
 
     /**
      * Zwraca informację o pogodzie w podanym mieście danego kraju w formacie JSON (to ma być pełna informacja uzyskana z serwisu openweather - po prostu tekst w formacie JSON).
@@ -111,32 +104,29 @@ public class Service {
         return null;
     }
 
-    public Double getNBPRate() {
+    public Double getNBPRate(String path) {
         String currencyCode = getCurrCode(country);
-        String data = null;
 
         if (currencyCode == null) {
             return null;
         }
 
-        try {
-            data = Connection.makeRequest(xmlNBPTableA);
-        } catch (IOException e) {
-            e.printStackTrace();
-            return null;
-        }
-
-        System.out.println(data);
-
         // When we compare PLN to PLN, rate will always be 1.0
         if (currencyCode.equals("PLN")) {
-            return 1d;
+            return 1.0;
+        }
+
+        String xmlData;
+        try {
+            xmlData = Connection.makeRequest(path);
+        } catch (IOException e1) {
+            return null;
         }
 
         try {
             DocumentBuilderFactory builderFactory = DocumentBuilderFactory.newInstance();
             DocumentBuilder builder = builderFactory.newDocumentBuilder();
-            Document doc = builder.parse(new InputSource(new StringReader(xmlNBPTableA)));
+            Document doc = builder.parse(new InputSource(new StringReader(xmlData)));
             XPath xPath = XPathFactory.newInstance().newXPath();
             String expression = String.format(
                     "/tabela_kursow/pozycja[descendant::kod_waluty[text()=\"%s\"]]/kurs_sredni", currencyCode
@@ -150,7 +140,6 @@ public class Service {
 
             Node node = nodeList.item(0);
             String textValue = node.getTextContent().replace(',', '.');
-            System.out.println(textValue);
             Double value = Double.parseDouble(textValue);
 
             return value;
@@ -170,6 +159,21 @@ public class Service {
         } catch (SAXException e) {
             e.printStackTrace();
             System.out.println("SAXException");
+        }
+
+        return null;
+    }
+
+    public Double getNBPRate() {
+        Double variantA = getNBPRate(NBP_XML_BASIS_A);
+
+        if (variantA != null) {
+            return variantA;
+        }
+
+        Double variantB = getNBPRate(NBP_XML_BASIS_B);
+        if (variantB != null) {
+            return variantB;
         }
 
         return null;

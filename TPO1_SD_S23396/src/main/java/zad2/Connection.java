@@ -14,7 +14,7 @@ public class Connection {
         try {
             URL url = new URL(UrlAPI);
 
-            try (BufferedReader in = new BufferedReader(new InputStreamReader(url.openStream(), "UTF-8"))) {
+            try (BufferedReader in = new BufferedReader(new InputStreamReader(url.openStream()))) {
                 String line;
                 while ((line = in.readLine()) != null)
                     s += line;

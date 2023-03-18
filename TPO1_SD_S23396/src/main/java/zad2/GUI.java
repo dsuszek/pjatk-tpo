@@ -9,6 +9,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.text.TextFlow;
 import javafx.scene.web.WebEngine;
 import javafx.scene.web.WebView;
 import javafx.stage.Stage;
@@ -23,9 +24,7 @@ public class GUI extends Application {
     private WebView webView = new WebView();
     private WebEngine webEngine = webView.getEngine();
     private VBox pane;
-    private final String[] countriesList = getCountriesList();
     private final String[] currenciesList = new String[]{"EUR", "PLN", "USD", "AUD", "JPY", "GBP"};
-
 
     @Override
     public void start(Stage stage) {
@@ -74,10 +73,7 @@ public class GUI extends Application {
             Service service = new Service(country);
             weather.setText(service.getWeather(city));
             currencyRate.setText(service.getRateFor(currency).toString());
-
-            if(service.getNBPRate() != null) {
-                NBPRate.setText(service.getNBPRate().toString());
-            }
+            NBPRate.setText(service.getNBPRate().toString());
 
             Platform.runLater(() -> {
                         webEngine.load("https://en.wikipedia.org/wiki/" + city);
@@ -86,54 +82,16 @@ public class GUI extends Application {
         });
 
         pane.getChildren().addAll(
+                new Label("Weather: "),
                 weather,
-                currencyRate
+                new Label("Exchange rate: "),
+                currencyRate,
+                new Label("NBP exchange rate: "),
+                NBPRate
         );
 
         Scene scene = new Scene(new VBox(pane, results), 1200, 800);
         stage.setScene(scene);
         stage.show();
     }
-
-
-    private String[] getCountriesList() {
-        ArrayList<String> countriesList = new ArrayList<String>();
-
-        for (Locale locale : Locale.getAvailableLocales()) {
-            String displayCountry = locale.getDisplayCountry();
-
-            if (!displayCountry.equals("")) {
-                countriesList.add(displayCountry);
-            }
-        }
-
-        countriesList
-                .stream()
-                .distinct()
-                .collect(Collectors.toList());
-        Collections.sort(countriesList);
-
-        return countriesList
-                .toArray(new String[countriesList.size()]);
-    }
-
-    private String[] getCurrenciesList() {
-        ArrayList<String> currenciesList = new ArrayList<String>();
-
-        for (Currency currency : Currency.getAvailableCurrencies()) {
-            currenciesList.add(currency.getCurrencyCode());
-        }
-
-        currenciesList
-                .stream()
-                .distinct()
-                .collect(Collectors.toList());
-        Collections.sort(currenciesList);
-
-
-        return currenciesList
-                .toArray(new String[currenciesList.size()]);
-    }
-
-
 }
