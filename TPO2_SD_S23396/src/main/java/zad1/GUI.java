@@ -20,9 +20,10 @@ public class GUI extends Application {
     @Override
     public void start(Stage stage) {
 
-        ComboBox<String> currenciesComboBox = new ComboBox<String>(FXCollections.observableArrayList(languages));
+        ComboBox<String> languageChoice = new ComboBox<>(FXCollections.observableArrayList(languages));
         TextField wordToBeTranslatedInput = new TextField();
         TextField languageCode = new TextField();
+        Label translation = new Label();
         Button confirmButton = new Button("Translate");
 
         // Set the parameters of wordToBeTranslatedInput TextField
@@ -33,7 +34,7 @@ public class GUI extends Application {
         );
 
         // Set the parameters of languageCode TextField
-        languageCode.setPromptText("Please enter target language code.");
+        languageCode.setPromptText("Please choose target language code.");
         languageCode.setPrefSize(100, 30);
         languageCode.setOnAction(
                 actionEvent -> languageCode.getText()
@@ -44,15 +45,23 @@ public class GUI extends Application {
         pane.getChildren().addAll(
                 new Label("Enter word to be translated: "),
                 wordToBeTranslatedInput,
-                new Label("Enter target language code: "),
-                languageCode,
-                confirmButton
+                new Label("Choose target language code: "),
+                languageChoice,
+                confirmButton,
+                new Label("Translation: ")
         );
 
         confirmButton.setOnAction((ActionEvent e) -> {
                     wordToBeTranslatedInput.setText("");
+                    translation.setText("");
+
                     String wordToBeTranslated = wordToBeTranslatedInput.getText();
+                    translation.setText(Client.getTranslation(wordToBeTranslated, "EN"));
                 }
+        );
+
+        pane.getChildren().addAll(
+                translation
         );
 
 

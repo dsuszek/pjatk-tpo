@@ -33,13 +33,10 @@ public class Service {
         this.country = country;
     }
 
-
-
     /**
-     * Zwraca informację o pogodzie w podanym mieście danego kraju w formacie JSON (to ma być pełna informacja uzyskana z serwisu openweather - po prostu tekst w formacie JSON).
-     *
+     * Uses OpenWeatherMap API and key to get current data.
      * @param city
-     * @return
+     * @return Short description of current weather in city.
      */
     String getWeather(String city) {
         String url = "https://api.openweathermap.org/data/2.5/weather?q=" + city + "&appid=0d1a33b85a66b2ec8437ebd21d77afc9";
@@ -65,6 +62,12 @@ public class Service {
         return null;
     }
 
+    /**
+     * Uses Locale class and gets all available locales.
+
+     * @param country name of country
+     * @return currency code for chosen country
+     */
     public String getCurrCode(String country) {
         for (Locale locale : Locale.getAvailableLocales()) {
             if (locale.getDisplayCountry().equals(country)) {
@@ -76,6 +79,11 @@ public class Service {
         return null;
     }
 
+    /**
+     * Uses getCurrCode() method to get currency code. Then it makes connection to API using url with two currency codes.
+     * @param currencyCode
+     * @return Exchange rate: currencyCode / baseCurrencyCode
+     */
     public Double getRateFor(String currencyCode) {
         String baseCurrencyCode = getCurrCode(country);
 
@@ -104,6 +112,13 @@ public class Service {
         return null;
     }
 
+    /**
+     * Uses API provided by NBP to get exchange rate between PLN and chosen currency.
+     * Please note: for PLN the exchange rate is always 1.0.
+     *
+     * @param path
+     * @return Double exchange rate between PLN and chosen currency.
+     */
     public Double getNBPRate(String path) {
         String currencyCode = getCurrCode(country);
 
@@ -120,6 +135,7 @@ public class Service {
         try {
             xmlData = Connection.makeRequest(path);
         } catch (IOException e1) {
+            System.err.println("Problem with input/output data in getNBPRate() method.");
             return null;
         }
 
@@ -164,6 +180,10 @@ public class Service {
         return null;
     }
 
+    /**
+     * Checks if currency can be found in table A. If not, then it will look for the results in table B.
+     * @return Double exchange rate between PLN and chosen currency.
+     */
     public Double getNBPRate() {
         Double variantA = getNBPRate(NBP_XML_BASIS_A);
 

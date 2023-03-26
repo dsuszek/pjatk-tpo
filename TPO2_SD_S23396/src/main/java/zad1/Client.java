@@ -1,6 +1,7 @@
 package zad1;
 
 import java.io.*;
+import java.net.InetAddress;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.UnknownHostException;
@@ -8,8 +9,8 @@ import java.net.UnknownHostException;
 public class Client {
 
     private long id;
-    private String host;
-    private int port;
+    private final int clientPort = 50000;
+    private static final int mainServerPort = 50001;
     private String request;
     private String wordToBeTranslated;
     private String languageCode;
@@ -17,13 +18,13 @@ public class Client {
     // Klient przekazuje do serwera głównego zapytanie w postaci:
     // {"polskie słowo do przetłumaczenia", "kod języka docelowego", port}.
 
-    public void getConnection(String host, int port) {
+    public static String getTranslation(String wordInPolish, String languageCode) {
+
+        String line = null;
+
         try {
             // Utworzenie gniazda
-            host = this.host; // adres IP serwera ("cyfrowo" lub z użyciem DNS)
-            port = this.port;      // numer portu na którym nasłuchuje serwer
-
-            Socket socket = new Socket(host, port);
+            Socket socket = new Socket("localhost", mainServerPort);
 
             // Uzyskanie strumieni do komunikacji
             BufferedReader br = new BufferedReader(
@@ -38,14 +39,14 @@ public class Client {
             // Komunikacja (zależna od protokołu)
 
             // Wysłanie zlecenia do serwera
-//             sockOut.write();
+            sockOut.write(Integer.parseInt(wordInPolish));
 
             // Odczytanie odpowiedzi serwera
             sockIn.read();
-            String line;
             while ((line = br.readLine()) != null) {
                 System.out.println(line);
             }
+
             // Po zakończeniu komunikacji - zamkniecie strumieni i gniazda
             sockOut.close();
             sockIn.close();
@@ -61,6 +62,8 @@ public class Client {
             System.err.println("IO Exception");
             e3.printStackTrace();
         }
+
+        return line;
     }
 
 

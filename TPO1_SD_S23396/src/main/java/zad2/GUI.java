@@ -30,7 +30,7 @@ public class GUI extends Application {
     public void start(Stage stage) {
 
         // ComboBox<String> countriesComboBox = new ComboBox<String>(FXCollections.observableArrayList(countriesList));
-        ComboBox<String> currenciesComboBox = new ComboBox<String>(FXCollections.observableArrayList(currenciesList));
+        ComboBox<String> currenciesComboBox = new ComboBox<>(FXCollections.observableArrayList(currenciesList));
         TextField countryNameInput = new TextField();
         TextField cityNameInput = new TextField();
         Button confirmButton = new Button("Confirm");
