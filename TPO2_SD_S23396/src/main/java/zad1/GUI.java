@@ -40,6 +40,8 @@ public class GUI extends Application {
                 actionEvent -> languageCode.getText()
         );
 
+
+
         pane = new VBox(10);
         pane.setPadding(new Insets(10));
         pane.getChildren().addAll(
@@ -55,8 +57,7 @@ public class GUI extends Application {
                     wordToBeTranslatedInput.setText("");
                     translation.setText("");
 
-                    String wordToBeTranslated = wordToBeTranslatedInput.getText();
-                    translation.setText(Client.getTranslation(wordToBeTranslated, "EN"));
+
                 }
         );
 

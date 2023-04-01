@@ -9,15 +9,10 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
-import javafx.scene.text.TextFlow;
 import javafx.scene.web.WebEngine;
 import javafx.scene.web.WebView;
 import javafx.stage.Stage;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Currency;
-import java.util.Locale;
-import java.util.stream.Collectors;
+
 
 public class GUI extends Application {
 
