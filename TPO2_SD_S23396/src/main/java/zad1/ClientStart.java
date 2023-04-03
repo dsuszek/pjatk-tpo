@@ -6,9 +6,9 @@ import java.net.UnknownHostException;
 
 public class ClientStart extends Thread {
 
-    private static Socket clientStartSocket;
-    private static DataInputStream input = null;
-    private static DataOutputStream output = null;
+    private Socket clientStartSocket;
+    private BufferedReader input;
+    private PrintWriter output;
 
 
     // Klient przekazuje do serwera głównego zapytanie w postaci:
@@ -16,58 +16,64 @@ public class ClientStart extends Thread {
 
     public void start() {
 
-        System.out.println("HI IM WORKING !");
+        log("inside method start()");
+        String serverHost = "localhost";
+        int mainServerPort = 9000;
 
-        String serverHost = "127.0.0.1";
-        int mainServerPort = 50001;
-
-        // establish a connection
+        // Establish a connection
         try {
+
+            log("Trying to connect to server socket with parameters: host - " + serverHost + " and port " + mainServerPort);
             clientStartSocket = new Socket(serverHost, mainServerPort);
             log("Connected");
 
-            // takes input from terminal
-            input = new DataInputStream(System.in);
+            input = new BufferedReader (
+//                    new InputStreamReader(clientStartSocket.getInputStream()));
+                    new InputStreamReader(System.in));
 
-            // sends output to the socket
-            output = new DataOutputStream(
-                    clientStartSocket.getOutputStream());
+            output = new PrintWriter (
+                    new OutputStreamWriter(clientStartSocket.getOutputStream()), true);
+
+            log("Streams created");
+
+
         } catch (UnknownHostException e1) {
             System.err.println("Unknown host");
             e1.printStackTrace();
-        } catch (IOException i) {
-            System.out.println(i);
+        } catch (IOException e2) {
+            System.err.println("IO Exception");
+            e2.printStackTrace();
             return;
         }
 
-        // string to read message from input
+        // String to read message from input
         String line = "";
 
-        // keep reading until "Over" is input
         while (!line.equals("Over")) {
-            try {
-                line = input.readLine();
-                output.writeUTF(line);
-            } catch (IOException i) {
-                System.out.println(i);
-            }
+            output.println(line);
         }
 
         closeConnection();
     }
 
-    public static void closeConnection(){
+    public void closeConnection(){
         try {
             input.close();
             output.close();
             clientStartSocket.close();
-        } catch (IOException i) {
-            System.out.println(i);
+        } catch (IOException e1) {
+            System.err.println("IO Exception");
+            e1.printStackTrace();
         }
     }
 
     public static void log(String message) {
         System.out.println("[C]: " + message);
+    }
+
+    public static void main(String[] args) {
+        ClientStart clientStart = new ClientStart();
+        clientStart.start();
     }
 
 }
