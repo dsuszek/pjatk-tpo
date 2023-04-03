@@ -1,10 +1,13 @@
 package Zad1;
 
+import javafx.application.Platform;
+
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
@@ -109,32 +112,62 @@ public class Server {
             return;
         }
 
-        // otherwise
+        log("I'm reading the request from the client...");
 
-        // reads the requests from client (Admin) and processes them
-        // it uses buffer defined above
+        // reading the request
+        reqString.setLength(0);
+        bbuf.clear();
 
-        // po uruchomieniu Zad1.Server nie ma zadnych dostepnych tematow
-        // tematy tworzy Zad1.Admin
-        // po połączeniu klient powinien dostać listę wszystkich dostępnych tematów
+        try {
 
-        String command = reqString.toString();
-        System.out.println(command);
+            // otherwise
 
-        String keyOfTopic;
-        String topicDescription;
+            // reads the requests from client (Admin) and processes them
+            // it uses buffer defined above
 
-        if (command.equals("Add topic")) {
-            // when admin wants to add topic
+            // po uruchomieniu Zad1.Server nie ma zadnych dostepnych tematow
+            // tematy tworzy Zad1.Admin
+            // po połączeniu klient powinien dostać listę wszystkich dostępnych tematów
 
-            keyOfTopic = ""; // @TODO finish the requests
-            topicDescription = "";
+            String command = reqString.toString();
+            System.out.println(command);
 
-            if (!mainServerData.containsKey(keyOfTopic)) { // if key hasn't been added yet
-                mainServerData.put(keyOfTopic, topicDescription);
+            String keyOfTopic = "";
+            String topicDescription = "";
+            String currentDescription = "";
+
+            if (command.startsWith("Add topic")) { // if the beginning of command is equal to "Add topic"
+                // when admin wants to add topic
+
+                keyOfTopic = ""; // @TODO finish the requests
+                topicDescription = "";
+
+                if (!mainServerData.containsKey(keyOfTopic)) { // if key hasn't been added yet
+                    mainServerData.put(keyOfTopic, topicDescription);
+                }
+            } else if (command.startsWith("Update topic")) {
+                currentDescription = mainServerData.get(keyOfTopic);
+
+            } else { // send echo to client
+                socketChannel.write(charset.encode(CharBuffer.wrap(reqString)));
+
+
             }
+
+        } catch (IOException e1) {
+            System.err.println("IO Exception while servicing the request from client");
+            e1.printStackTrace();
+        }
+
+        // close the channel
+
+        try {
+            socketChannel.close();
+            socketChannel.socket().close();
+        } catch (IOException e2) {
+            System.err.println("IO Exception while closing the socket channel");
+            e2.printStackTrace();
         }
 
     }
-
 }
