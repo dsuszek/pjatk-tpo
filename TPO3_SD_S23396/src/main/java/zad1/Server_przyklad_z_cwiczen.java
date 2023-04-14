@@ -104,10 +104,8 @@ public class Server_przyklad_z_cwiczen {
                     // ...
                     continue;
                 }
-
             }
         }
-
     }
 
 
@@ -176,7 +174,5 @@ public class Server_przyklad_z_cwiczen {
             } catch (Exception e) {
             }
         }
-
     }
-
 }

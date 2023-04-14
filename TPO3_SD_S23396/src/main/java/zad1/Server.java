@@ -24,15 +24,13 @@ public class Server {
     // request to be processed
     private StringBuffer reqString = new StringBuffer();
 
-    Server() {
+    Server(String host, int port) {
 
         try {
 
-            String host = "localhost";
-            int port = 5000;
             ServerSocketChannel serverSocketChannel = ServerSocketChannel.open(); // connection opened
             InetSocketAddress isa = new InetSocketAddress(host, port); // binds the channel's socket to a local address
-            serverSocketChannel.bind(isa);
+            serverSocketChannel.socket().bind(isa);
 
             serverSocketChannel.configureBlocking(false); // the connection will not be blocked for other clients
 
@@ -41,7 +39,7 @@ public class Server {
             serverSocketChannel.register(selector,
                     SelectionKey.OP_ACCEPT);
 
-            log("I'm waiting at host: " + host + " and port " + port);
+            log("I'm waiting at host: " + host + " and port: " + port);
 
             while (true) {
 
@@ -55,7 +53,7 @@ public class Server {
 
                 while (keyIterator.hasNext()) { // for each key
 
-                    SelectionKey key = keyIterator.next();
+                    SelectionKey key = (SelectionKey) keyIterator.next();
 
                     keyIterator.remove();
 
@@ -64,22 +62,21 @@ public class Server {
 
                         SocketChannel clientChannel = serverSocketChannel.accept();
                         clientChannel.configureBlocking(false);
-                        clientChannel.register(selector, SelectionKey.OP_READ | SelectionKey.OP_WRITE);
+                        clientChannel.register(selector, SelectionKey.OP_READ);
+
                         continue;
                     }
 
                     if (key.isReadable()) { // one of the channels ready for reading
                         SocketChannel clientChannel = (SocketChannel) key.channel();
-
                         serviceRequest(clientChannel); // service of client's request
 
                         continue;
                     }
 
                     if (key.isWritable()) { // one of the channels ready for writing
-
+                        SocketChannel clientChannel = (SocketChannel) key.channel();
                         // @TODO finish condition if(key.isWritable)
-                        continue;
 
                     }
                 }
@@ -136,36 +133,56 @@ public class Server {
             // po połączeniu klient powinien dostać listę wszystkich dostępnych tematów
 
             String command = reqString.toString();
-            System.out.println(command);
-
+            String commandCode = "";
             String keyOfTopic = "";
             String topicDescription = "";
             String currentDescription = "";
 
-            if (command.equals("Hi")) {
-                socketChannel.write(charset.encode(CharBuffer.wrap("Hi")));
-            } else if (command.equals("Bye")) {           // koniec komunikacji
+            log("Command is: " + command);
 
-                socketChannel.write(charset.encode(CharBuffer.wrap("Bye")));
-                System.out.println("Serwer: mówię \"Bye\" do klienta ...\n\n");
+            String[] actualRequest = command.split(" ", 3);
+            // if request is too short - not enough parameters
+            if(!command.startsWith("0") || !command.startsWith("5") || actualRequest.length < 2) {
+                writeResp(socketChannel, "Not enough arguments provided. Please check that.");
+            }
 
-                socketChannel.close();                      // - zamknięcie kanału
-                socketChannel.socket().close();             // i gniazda
-            } else if (command.startsWith("Add topic")) { // if the beginning of command is equal to "Add topic"
+            commandCode = actualRequest[0];
+            keyOfTopic = actualRequest[1];
+            topicDescription = actualRequest[2];
+
+            log("Key of topic is: " + keyOfTopic);
+            log("Description of topic is: " + topicDescription);
+
+            if (commandCode == "0") {
+
+                closeConnection(socketChannel);
+
+            } else if (command.startsWith("1")) { // action "remove topic" - code 1
+
+                mainServerData.remove(keyOfTopic);
+                writeResp(socketChannel, "The topic " + keyOfTopic + " was removed from the list.");
+
+            } else if (command.startsWith("2")) { // action "add topic" - code 2
                 // when admin wants to add topic
-
-                keyOfTopic = ""; // @TODO finish the requests
-                topicDescription = "";
 
                 if (!mainServerData.containsKey(keyOfTopic)) { // if key hasn't been added yet
                     mainServerData.put(keyOfTopic, topicDescription);
                 }
-            } else if (command.startsWith("Update topic")) {
+
+                writeResp(socketChannel, "The topic " + keyOfTopic + " was added to the list.");
+
+            } else if (command.startsWith("3")) { // action "update topic" - code 3
                 currentDescription = mainServerData.get(keyOfTopic);
 
-            } else { // send echo to client
-                socketChannel.write(charset.encode(CharBuffer.wrap(reqString)));
+                writeResp(socketChannel, "The description of the topic " + keyOfTopic + " was updated.");
+            } else if (command.startsWith("4")) { // inform all clients about the changes - code 4
+                // @TODO how to get a list of all available clients ?
 
+            } else if (command.startsWith("5")) {
+                showAllTopics();
+            } else { // unknown command code
+
+                writeResp(socketChannel, "Unknown command code. Please check that.");
 
             }
 
@@ -174,22 +191,55 @@ public class Server {
             e1.printStackTrace();
         }
 
-        // close the channel
-
-        try {
-            socketChannel.close();
-            socketChannel.socket().close();
-        } catch (IOException e2) {
-            System.err.println("IO Exception while closing the socket channel");
-            e2.printStackTrace();
-        }
     }
 
+
+    private StringBuffer remsg = new StringBuffer(); // Odpowiedź
+
+    private void writeResp(SocketChannel sc, String addMsg)
+            throws IOException {
+        remsg.setLength(0);
+        remsg.append(' ');
+        remsg.append('\n');
+        if (addMsg != null) {
+            remsg.append(addMsg);
+            remsg.append('\n');
+        }
+        ByteBuffer buf = charset.encode(CharBuffer.wrap(remsg));
+        sc.write(buf);
+    }
+
+    public void addTopic(String topic, String description) {
+        mainServerData.put(topic, description);
+    }
+
+    public void getDescription(String topic) {
+        mainServerData.get(topic);
+    }
+
+    public void removeTopic(String topic) {
+//        mainServerData.remove(keyOfTopic);
+//        writeResp(socketChannel, "The topic " + keyOfTopic + " was removed from the list.");
+
+    }
+
+
+    public List<String> showAllTopics() {
+        List<String> topics = new ArrayList<>(mainServerData.keySet());
+        return topics;
+    }
+
+
     public static void main(String[] args) {
-        new Server();
+        new Server("localhost", 10000);
     }
 
     private static void log(String message) {
         System.out.println("[Server]: " + message);
+    }
+
+    private void closeConnection(SocketChannel socketChannel) throws IOException {
+        socketChannel.close();
+        socketChannel.socket().close();
     }
 }

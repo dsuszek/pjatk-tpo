@@ -3,86 +3,73 @@ package zad1;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
-import javafx.concurrent.Service;
 import javafx.event.ActionEvent;
-import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
 import javafx.geometry.Insets;
-import javafx.scene.Parent;
+import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
-import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
-import javafx.scene.web.WebEngine;
-import javafx.scene.web.WebView;
 import javafx.stage.Stage;
+
 
 public class AdminGUI extends Application {
 
+
     private VBox pane;
-    private final String[] listOfTopics = new String[]{"Business", "Food", "Travels"};
+
 
     @Override
     public void start(Stage stage) {
 
-        // ComboBox<String> countriesComboBox = new ComboBox<String>(FXCollections.observableArrayList(countriesList));
-        ComboBox<String> topicsComboBox = new ComboBox<>(FXCollections.observableArrayList(listOfTopics));
-        TextField countryNameInput = new TextField();
-        TextField cityNameInput = new TextField();
-        Button confirmButton = new Button("Confirm");
-        GridPane results = new GridPane();
-        Label weather = new Label();
-        Label currencyRate = new Label();
-        Label NBPRate = new Label();
+        // Server server = new Server("localhost", 10000);
 
-        countryNameInput.setPromptText("Please enter name of topic.");
-        countryNameInput.setPrefSize(100, 30);
-        countryNameInput.setOnAction(
-                actionEvent -> countryNameInput.getText()
-        );
+        Button showAllTopicsBtn = new Button("Show all topics");
 
-        cityNameInput.setPromptText("Please enter name of city.");
-        cityNameInput.setPrefSize(100, 30);
+        TextField addTopicName = new TextField();
+        addTopicName.setPromptText("Please enter name of topic you would like to add");
+        addTopicName.setMaxWidth(300);
 
-        pane = new VBox(10);
-        pane.setPadding(new Insets(10));
-        pane.getChildren().addAll(
-                new Label("Enter country name: "),
-                countryNameInput,
-                new Label("Enter city name: "),
-                cityNameInput,
-                new Label("Please select currency code: "),
-                topicsComboBox,
-                confirmButton);
+        TextField removeTopicName = new TextField();
+        removeTopicName.setPromptText("Please enter name of topic you would like to remove");
+        removeTopicName.setMaxWidth(300);
 
-        confirmButton.setOnAction((ActionEvent e) -> {
 
-            weather.setText("");
-            currencyRate.setText("");
-            NBPRate.setText("");
+        Button addTopicBtn = new Button("Add topic");
+        Button removeTopicBtn = new Button("Remove topic");
+        Button informClientsAboutChangesBtn = new Button("Inform clients about changes");
 
-            String country = countryNameInput.getText();
-            String currency = topicsComboBox.getValue();
-            String city = cityNameInput.getText();
+
+//        showAllTopicsBtn.setOnAction((ActionEvent e1) -> {
+//            server.showAllTopics();
+//        });
+
+
+        addTopicBtn.setOnAction((ActionEvent e1) -> {
+
 
         });
 
+
+        pane = new VBox(3);
+        pane.setPadding(new Insets(3));
+        pane.setAlignment(Pos.CENTER);
+
         pane.getChildren().addAll(
-                new Label("Weather: "),
-                weather,
-                new Label("Exchange rate: "),
-                currencyRate,
-                new Label("NBP exchange rate: "),
-                NBPRate
+                showAllTopicsBtn,
+                addTopicName,
+                addTopicBtn,
+                removeTopicName,
+                removeTopicBtn,
+                informClientsAboutChangesBtn
         );
 
-        Scene scene = new Scene(pane, 1200, 800);
+        Scene scene = new Scene(pane, 800, 600);
         stage.setScene(scene);
         stage.show();
     }
 
-
     public static void main(String[] args) {
         launch(args);
     }
+
 }

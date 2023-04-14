@@ -11,40 +11,40 @@ import java.util.Scanner;
 
 public class Client {
 
-    public static void main(String[] args) throws IOException {
+    public Client() {
 
         SocketChannel channel = null;
         String server = "localhost"; // adres hosta serwera
-        int port = 5000; // numer portu
+        int port = 10000; // numer portu
 
         try {
-            // Utworzenie kanału
+            // creating the channel
             channel = SocketChannel.open();
 
-            // Ustalenie trybu nieblokującego
+            // setting non-blocking mode
             channel.configureBlocking(false);
 
-            // połączenie kanału
+            // connection of channel
             channel.connect(new InetSocketAddress(server, port));
 
-            System.out.print("Klient: łączę się z serwerem ...");
+            log("Łączę się z serwerem ...");
 
             while (!channel.finishConnect()) {
                 // ew. pokazywanie czasu łączenia (np. pasek postępu)
                 // lub wykonywanie jakichś innych (krótkotrwałych) działań
             }
 
-        } catch(UnknownHostException exc) {
+        } catch (UnknownHostException exc) {
             System.err.println("Uknown host " + server);
             // ...
-        } catch(Exception exc) {
+        } catch (Exception exc) {
             exc.printStackTrace();
             // ...
         }
 
-        System.out.println("\nKlient: jestem połączony z serwerem ...");
+        log("Jestem połączony z serwerem ...");
 
-        Charset charset  = Charset.forName("ISO-8859-2");
+        Charset charset = Charset.forName("ISO-8859-2");
         Scanner scanner = new Scanner(System.in);
 
         // Alokowanie bufora bajtowego
@@ -56,86 +56,62 @@ public class Client {
         ByteBuffer inBuf = ByteBuffer.allocateDirect(rozmiar_bufora);
         CharBuffer cbuf = null;
 
+        log("Wysyłam: Hi");
 
-        System.out.println("Klient: wysyłam - Hi");
-        // "Powitanie" do serwera
-        channel.write(charset.encode("Hi\n"));
+        try {
+            channel.write(charset.encode("Hi\n"));
 
-        // pętla czytania
-        while (true) {
+            while (true) { // pętla czytania
+                inBuf.clear(); //
+                int readBytes = channel.read(inBuf);
 
-            //cbuf = CharBuffer.wrap("coś" + "\n");
+                if (readBytes == 0) {
+                    continue;
+                } else if (readBytes == -1) { // kanał zamknięty po stronie serwera, dalsze czytanie niemożliwe
+                    break;
+                } else {
+                    inBuf.flip(); // przestawienie bufora
+                    cbuf = charset.decode(inBuf);
+                    String dataFromServer = cbuf.toString();
 
-            inBuf.clear();	// opróżnienie bufora wejściowego
-            int readBytes = channel.read(inBuf); // czytanie nieblokujące
-            // natychmiast zwraca liczbę
-            // przeczytanych bajtów
+                    log("Serwer właśnie odpisał: " + dataFromServer);
+                    cbuf.clear();
 
-            // System.out.println("readBytes =  " + readBytes);
+                    if (dataFromServer.equals("Bye")) {
+                        break;
+                    }
+                }
 
-            if (readBytes == 0) {                              // jeszcze nie ma danych
-                //System.out.println("zero bajtów");
+                // teraz klient pisze do serwera
+                String input = scanner.nextLine();
+                cbuf = CharBuffer.wrap(input + "\n");
+                ByteBuffer outBuf = charset.encode(cbuf);
+                channel.write(outBuf);
 
-                // jakieś (krótkotrwałe) działania np. info o upływającym czasie
-
-                continue;
-
+                log("Piszę: " + input);
             }
-            else if (readBytes == -1) { // kanał zamknięty po stronie serwera
-                // dalsze czytanie niemożlwe
-                // ...
-                break;
-            }
-            else {		// dane dostępne w buforze
-                //System.out.println("coś jest od serwera");
-
-                inBuf.flip();	// przestawienie bufora
-
-                // pobranie danych z bufora
-                // ew. decyzje o tym czy mamy komplet danych - wtedy break
-                // czy też mamy jeszcze coś do odebrania z serwera - kontynuacja
-                cbuf = charset.decode(inBuf);
-
-                String odSerwera = cbuf.toString();
-
-                System.out.println("Klient: serwer właśnie odpisał ... " + odSerwera);
-                cbuf.clear();
-
-                if (odSerwera.equals("Bye")) break;
-            }
-
-            // Teraz klient pisze do serwera poprzez Scanner
-            String input = scanner.nextLine();
-            cbuf = CharBuffer.wrap(input + "\n");
-            ByteBuffer outBuf = charset.encode(cbuf);
-            channel.write(outBuf);
-
-            System.out.println("Klient: piszę " + input);
+        } catch (IOException e1) {
+            e1.printStackTrace();
         }
 
         scanner.close();
 
     }
 
+    private void subscribe(String topic) {
 
-//    SocketChannel channel = null;
-//    String server = "localhost";
-//    int port = 5000;
-//
-//    Client() {
-//        try {
-//            channel = SocketChannel.open();
-//            channel.configureBlocking(false); //
-//        } catch (IOException e1) {
-//            System.err.println("IO Exception while configuring the socket channel in class Client");
-//            e1.printStackTrace();
-//        }
-//
-//    }
-//
-//    public void sendRequest() {
-//
-//    }
+    }
 
+    private void unsubscribe(String topic) {
+
+    }
+
+    private static void log(String message) {
+        System.out.println("[Client]: " + message);
+    }
+
+    public static void main(String[] args) {
+        Client client = new Client();
+    }
 
 }

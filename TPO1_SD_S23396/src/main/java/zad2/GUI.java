@@ -57,10 +57,6 @@ public class GUI extends Application {
 
         confirmButton.setOnAction((ActionEvent e) -> {
 
-            weather.setText("");
-            currencyRate.setText("");
-            NBPRate.setText("");
-
             String country = countryNameInput.getText();
             String currency = currenciesComboBox.getValue();
             String city = cityNameInput.getText();
