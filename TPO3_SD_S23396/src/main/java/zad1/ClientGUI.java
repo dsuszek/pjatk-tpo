@@ -10,22 +10,21 @@ import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 public class ClientGUI extends Application {
 
 
     private VBox pane;
-    private String[] topicsTest = new String[]{"Sport", "Food"};
-    private List<String> listOfSubscribedTopics = Arrays.stream(topicsTest).toList();
-
+    private Map<String, String> mainServerData = Server.getMainServerData();
+    private List<String> listOfAvailableTopics = new ArrayList<>();
+    private List<String> listOfSubscribedTopics = new ArrayList<>();
 
     @Override
     public void start(Stage stage) {
 
-        ComboBox<String> topicsComboBox = new ComboBox<>(FXCollections.observableArrayList(listOfSubscribedTopics));
+        listOfAvailableTopics.addAll(mainServerData.keySet());
+
         TextField addTopicName = new TextField();
         addTopicName.setPromptText("Please enter name of topic you would like to subscribe.");
         addTopicName.setPrefSize(100, 30);
@@ -37,14 +36,17 @@ public class ClientGUI extends Application {
         Button subscribeTopicButton = new Button("Subscribe topic");
         Button unsubscribeTopicButton = new Button("Unsubscribe topic");
 
+        ListView listView = new ListView(FXCollections.observableList(listOfAvailableTopics));
+        listView.setEditable(true);
+        listView.setPrefSize(100, 100);
+
         subscribeTopicButton.setOnAction((ActionEvent e1) -> {
-
-
+            listOfSubscribedTopics.add(addTopicName.getText());
         });
 
 
         unsubscribeTopicButton.setOnAction((ActionEvent e2) -> {
-            String keyTopicToBeUnsubscribed = topicsComboBox.getValue();
+            String keyTopicToBeUnsubscribed = (String) listView.getSelectionModel().getSelectedItem();
 
             listOfSubscribedTopics.remove(keyTopicToBeUnsubscribed);
         });
@@ -54,13 +56,14 @@ public class ClientGUI extends Application {
         pane.setPadding(new Insets(10));
 
         pane.getChildren().addAll(
-                topicsComboBox,
+                listView,
                 subscribeTopicButton,
                 unsubscribeTopicButton
         );
 
         Scene scene = new Scene(pane, 800, 600);
         stage.setScene(scene);
+        stage.setTitle("Client");
         stage.show();
     }
 

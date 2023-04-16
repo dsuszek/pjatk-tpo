@@ -1,7 +1,9 @@
 package zad1;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.channels.SelectionKey;
@@ -13,31 +15,49 @@ import java.util.*;
 
 public class Server {
 
+    private InetAddress host;
+    private int port;
+    private ArrayList<SocketChannel> clients;
+
+
+    public Server(InetAddress host, int port) {
+        this.host = host;
+        this.port = port;
+    }
+
     private static Map<String, String> mainServerData = new HashMap<>();
 
     // charset for coding & decoding the buffers
-    private static Charset charset = Charset.forName("ISO-8859-2");
-    private static final int BSIZE = 1024;
+    private Charset charset = Charset.forName("ISO-8859-2");
+    private final int BSIZE = 1024;
 
     private ByteBuffer bbuf = ByteBuffer.allocate(BSIZE);
 
     // request to be processed
     private StringBuffer reqString = new StringBuffer();
 
-    Server(String host, int port) {
+    public static Map<String, String> getMainServerData() {
+        return mainServerData;
+    }
 
+    public void connect(){
         try {
+            mainServerData.put("ITEM1", "sporteffew veverv vre");
+            mainServerData.put("ITEM2", "sporfefteffew veverv vre");
+            mainServerData.put("ITEM3", "fewf veverv vre");
+            mainServerData.put("ITEM4", "erwerwr veverv vre");
 
             ServerSocketChannel serverSocketChannel = ServerSocketChannel.open(); // connection opened
             InetSocketAddress isa = new InetSocketAddress(host, port); // binds the channel's socket to a local address
             serverSocketChannel.socket().bind(isa);
-
             serverSocketChannel.configureBlocking(false); // the connection will not be blocked for other clients
 
             Selector selector = Selector.open(); // create and open the selector
 
             serverSocketChannel.register(selector,
                     SelectionKey.OP_ACCEPT);
+
+            clients = new ArrayList<>();
 
             log("I'm waiting at host: " + host + " and port: " + port);
 
@@ -63,6 +83,8 @@ public class Server {
                         SocketChannel clientChannel = serverSocketChannel.accept();
                         clientChannel.configureBlocking(false);
                         clientChannel.register(selector, SelectionKey.OP_READ);
+
+                        clients.add(clientChannel);
 
                         continue;
                     }
@@ -90,6 +112,11 @@ public class Server {
         }
 
     }
+
+    public ArrayList<SocketChannel> getAllClients() {
+        return clients;
+    }
+
 
     private void serviceRequest(SocketChannel socketChannel) {
         // all operations...
@@ -138,59 +165,73 @@ public class Server {
             String topicDescription = "";
             String currentDescription = "";
 
-            log("Command is: " + command);
-
             String[] actualRequest = command.split(" ", 3);
-            // if request is too short - not enough parameters
-            if(!command.startsWith("0") || !command.startsWith("5") || actualRequest.length < 2) {
-                writeResp(socketChannel, "Not enough arguments provided. Please check that.");
-            }
 
-            commandCode = actualRequest[0];
-            keyOfTopic = actualRequest[1];
-            topicDescription = actualRequest[2];
+            log("Request from client: " + command);
 
-            log("Key of topic is: " + keyOfTopic);
-            log("Description of topic is: " + topicDescription);
+            // each request has different flag
+            if(command.startsWith("1")) {
+                // action "remove topic" - code 1 (2 parameters)
 
-            if (commandCode == "0") {
+                if(actualRequest.length < 2) {
+                    writeResp(socketChannel, "Not enough arguments provided. Please check that.");
+                    log("Not enough arguments provided. Please check that.");
+                }
+                commandCode = actualRequest[0];
+                keyOfTopic = actualRequest[1];
 
-                closeConnection(socketChannel);
+                if(mainServerData.containsKey(keyOfTopic)) {
+                    mainServerData.remove(keyOfTopic);
+                } else {
+                    writeResp(socketChannel, "Topic not available.");
+                    log("Topic not available");
+                }
+            } else if(command.startsWith("2")) {
+                // action "add topic" - code 2 (3 parameters)
 
-            } else if (command.startsWith("1")) { // action "remove topic" - code 1
-
-                mainServerData.remove(keyOfTopic);
-                writeResp(socketChannel, "The topic " + keyOfTopic + " was removed from the list.");
-
-            } else if (command.startsWith("2")) { // action "add topic" - code 2
-                // when admin wants to add topic
-
-                if (!mainServerData.containsKey(keyOfTopic)) { // if key hasn't been added yet
-                    mainServerData.put(keyOfTopic, topicDescription);
+                if(actualRequest.length < 3) {
+                    writeResp(socketChannel, "Not enough arguments provided. Please check that.");
+                    log("Not enough arguments provided. Please check that.");
+                } else {
+                    commandCode = actualRequest[0];
+                    keyOfTopic = actualRequest[1];
+                    topicDescription = actualRequest[2];
                 }
 
-                writeResp(socketChannel, "The topic " + keyOfTopic + " was added to the list.");
+                mainServerData.put(keyOfTopic, topicDescription);
+            } else if(command.startsWith("3")) {
+                // action "update topic" - code 3 (3 parameters)
 
-            } else if (command.startsWith("3")) { // action "update topic" - code 3
-                currentDescription = mainServerData.get(keyOfTopic);
+                if(actualRequest.length < 3) {
+                    writeResp(socketChannel, "Not enough arguments provided. Please check that.");
+                    log("Not enough arguments provided. Please check that.");
+                } else {
+                    commandCode = actualRequest[0];
+                    keyOfTopic = actualRequest[1];
+                    topicDescription = actualRequest[2];
 
-                writeResp(socketChannel, "The description of the topic " + keyOfTopic + " was updated.");
-            } else if (command.startsWith("4")) { // inform all clients about the changes - code 4
-                // @TODO how to get a list of all available clients ?
+                }
+                mainServerData.put(keyOfTopic, topicDescription);
 
-            } else if (command.startsWith("5")) {
-                showAllTopics();
-            } else { // unknown command code
+            } else if(command.startsWith("4")) {
+                // inform all clients about the changes - code 4 (1 parameter)
 
+            } else if(command.startsWith("5")) {
+                log("I'm in command.startWith 5 section");
+                // action "show all topics" - code 5 (1 parameter)
+                List<String> allTopics = mainServerData.keySet().stream().toList();
+                for(int i = 0; i < allTopics.size(); i++) {
+                    log("Topic: " + allTopics.get(i));
+                }
+                writeResp(socketChannel, mainServerData.keySet().stream().toString());
+            } else {
                 writeResp(socketChannel, "Unknown command code. Please check that.");
-
             }
 
         } catch (IOException e1) {
             System.err.println("IO Exception while servicing the request from client");
             e1.printStackTrace();
         }
-
     }
 
 
@@ -224,17 +265,19 @@ public class Server {
     }
 
 
-    public List<String> showAllTopics() {
-        List<String> topics = new ArrayList<>(mainServerData.keySet());
-        return topics;
+    public void getAllTopics(List<String> topics) {
+        for (int i = 0; i < topics.size(); i++) {
+            log("Key no. " + i + ": " + topics.get(i));
+        }
     }
 
 
-    public static void main(String[] args) {
-        new Server("localhost", 10000);
+    public static void main(String args[]) throws UnknownHostException {
+        Server server = new Server(InetAddress.getByName("localhost"), 10000);
+        server.connect();
     }
 
-    private static void log(String message) {
+    private void log(String message) {
         System.out.println("[Server]: " + message);
     }
 

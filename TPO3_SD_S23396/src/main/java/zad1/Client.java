@@ -1,22 +1,28 @@
 package zad1;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.Charset;
-import java.util.Scanner;
+import java.util.ArrayList;
 
 public class Client {
 
-    public Client() {
+    private InetAddress host;
+    private int port;
+    private SocketChannel channel = null;
+    private ArrayList<SocketChannel> subscribedTopics;
 
-        SocketChannel channel = null;
-        String server = "localhost"; // adres hosta serwera
-        int port = 10000; // numer portu
+    public Client(InetAddress host, int port) {
+        this.host = host;
+        this.port = port;
+    }
 
+    public void connect() {
         try {
             // creating the channel
             channel = SocketChannel.open();
@@ -24,94 +30,98 @@ public class Client {
             // setting non-blocking mode
             channel.configureBlocking(false);
 
-            // connection of channel
-            channel.connect(new InetSocketAddress(server, port));
+            // binding the socket channel with host and port
+            channel.connect(new InetSocketAddress(host, port));
 
-            log("Łączę się z serwerem ...");
+            log("Connecting to the server ...");
 
             while (!channel.finishConnect()) {
                 // ew. pokazywanie czasu łączenia (np. pasek postępu)
                 // lub wykonywanie jakichś innych (krótkotrwałych) działań
             }
 
-        } catch (UnknownHostException exc) {
-            System.err.println("Uknown host " + server);
-            // ...
-        } catch (Exception exc) {
-            exc.printStackTrace();
-            // ...
+        } catch (UnknownHostException e1) {
+            System.err.println("Uknown host " + host);
+            e1.printStackTrace();
+        } catch (IOException e2) {
+            System.err.println("IO Exception when trying to connect to server.");
+            e2.printStackTrace();
         }
 
-        log("Jestem połączony z serwerem ...");
+        log("I'm connected to the server ...");
 
         Charset charset = Charset.forName("ISO-8859-2");
-        Scanner scanner = new Scanner(System.in);
 
         // Alokowanie bufora bajtowego
         // allocateDirect pozwala na wykorzystanie mechanizmów sprzętowych
         // do przyspieszenia operacji we/wy
+
         // Uwaga: taki bufor powinien być alokowany jednokrotnie
         // i wielokrotnie wykorzystywany w operacjach we/wy
-        int rozmiar_bufora = 1024;
-        ByteBuffer inBuf = ByteBuffer.allocateDirect(rozmiar_bufora);
+        int buffer_size = 1024;
+        ByteBuffer inBuf = ByteBuffer.allocateDirect(buffer_size);
         CharBuffer cbuf = null;
 
-        log("Wysyłam: Hi");
-
         try {
-            channel.write(charset.encode("Hi\n"));
-
-            while (true) { // pętla czytania
+            while (true) {
                 inBuf.clear(); //
                 int readBytes = channel.read(inBuf);
 
                 if (readBytes == 0) {
                     continue;
-                } else if (readBytes == -1) { // kanał zamknięty po stronie serwera, dalsze czytanie niemożliwe
+                } else if (readBytes == -1) { // channel closed on server side, reading isn't possible anymore
                     break;
                 } else {
-                    inBuf.flip(); // przestawienie bufora
+                    inBuf.flip();
                     cbuf = charset.decode(inBuf);
                     String dataFromServer = cbuf.toString();
 
-                    log("Serwer właśnie odpisał: " + dataFromServer);
+                    log("Server just responded: " + dataFromServer);
                     cbuf.clear();
 
-                    if (dataFromServer.equals("Bye")) {
+                    if (dataFromServer.equals("-1")) {
                         break;
                     }
                 }
 
-                // teraz klient pisze do serwera
-                String input = scanner.nextLine();
-                cbuf = CharBuffer.wrap(input + "\n");
-                ByteBuffer outBuf = charset.encode(cbuf);
-                channel.write(outBuf);
-
-                log("Piszę: " + input);
             }
         } catch (IOException e1) {
             e1.printStackTrace();
         }
-
-        scanner.close();
-
     }
 
-    private void subscribe(String topic) {
 
-    }
+    public void sendRequest(String request) throws IOException {
+        channel = SocketChannel.open();
 
-    private void unsubscribe(String topic) {
+        // setting non-blocking mode
+        channel.configureBlocking(false);
 
+        // binding the socket channel with host and port
+        channel.connect(new InetSocketAddress(host, port));
+
+        while (!channel.finishConnect()) {}
+
+        // client writes to server
+        Charset charset = Charset.forName("ISO-8859-2");
+        CharBuffer cbuf = null;
+        cbuf = CharBuffer.wrap(request + "\n");
+        ByteBuffer outBuf = charset.encode(cbuf);
+
+        try {
+            channel.write(outBuf);
+        } catch (IOException e1) {
+            e1.printStackTrace();
+        }
     }
 
     private static void log(String message) {
         System.out.println("[Client]: " + message);
     }
 
-    public static void main(String[] args) {
-        Client client = new Client();
+    public static void main(String[] args) throws IOException {
+        Client client = new Client(InetAddress.getByName("localhost"), 10000);
+        client.connect();
     }
 
 }

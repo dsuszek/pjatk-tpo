@@ -4,3 +4,10 @@
 
 
 -> jak odroznic admina od "zwyklego" klienta ?
+
+
+action "remove topic" - code 1 (2 parameters)
+action "add topic" - code 2 (3 parameters)
+action "update topic" - code 3 (3 parameters)
+inform all clients about the changes - code 4 (1 parameter)
+action "show all topics" - code 5 (1 parameter)
