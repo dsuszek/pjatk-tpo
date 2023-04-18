@@ -1,82 +1,134 @@
 package zad1;
 
 import java.io.*;
-import java.net.InetSocketAddress;
-import java.net.ServerSocket;
-import java.net.Socket;
+import java.net.*;
+import java.util.HashMap;
+import java.util.Map;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class MainServer extends Thread {
 
+    private static final String API_KEY = "87ad2cd9-fa1f-773f-67a7-e7c15d61fd6d:fx";
+    private static final String API_ENDPOINT = "https://api-free.deepl.com/v2/translate";
+
     // This server is only an intermediary - it gets data from client and creates another client
-    private ServerSocket serverSocket;
-    private Socket clientSocket;
-    private BufferedReader input;
+    private ServerSocket serverSocket = null;
+    private static String host = "localhost";
+    private static final int port = 10000;
     private PrintWriter output;
-    private volatile boolean serverRunning = true; // keyword "volatile" makes it possible to work with multiple threads
-    private final String host = "localhost";
-    private final int mainServerPort = 9000;
+    private BufferedReader input;
+    private boolean isServerRunning;
+    private static final Map<String, String> languagesPortsMapping = new HashMap<>();
+    private static String sourceLang = "PL";
 
 
-    private int serverID; // <-- a tego uzywamy do rozroznienia serwerow
+    public MainServer(ServerSocket serverSocket) {
+        this.serverSocket = serverSocket;
 
-    public MainServer(){}
+        log("Server started");
+        log("Listening at port: " + serverSocket.getLocalPort());
+        log("bind address: " + serverSocket.getInetAddress());
 
-    public void start() {
+        serviceConnections();
+    }
+
+    public void serviceConnections() {
+        isServerRunning = true;
+
+        while (isServerRunning) { // server works all the time
+            try {
+
+                Socket connection = serverSocket.accept();
+                log("Connection established");
+                getTranslation(connection);
+
+            } catch (IOException e1) {
+                System.err.println("IO Exception");
+                e1.printStackTrace();
+            }
+        }
 
         try {
-            serverSocket = new ServerSocket(mainServerPort);
-            log("Server created");
-            log("Waiting for a client");
-
-            while (serverRunning) {
-                log("Connection established");
-                log("Listening on port: " + mainServerPort);
-                serverSocket.accept();
-                log("Accepted");
-                serviceRequests(clientSocket);
-            }
-
             serverSocket.close();
-        } catch (IOException e1) {
-            System.err.println("IO Exception");
-            e1.printStackTrace();
+        } catch (IOException e2) {
+            e2.printStackTrace();
         }
     }
 
     // Handles requests from client
-    public void serviceRequests(Socket clientSocket) {
-        try { // Create the streams
-            input = new BufferedReader(
-                    new InputStreamReader(
-                            clientSocket.getInputStream()));
+    public String getTranslation(Socket connection) throws IOException {
+
+            input = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+
             output = new PrintWriter(
-                    clientSocket.getOutputStream(), true);
+                    connection.getOutputStream(), true);
 
-            // String to read message from input
-            String line = "";
+            // reading the requests
+            String request = input.readLine();
 
-            // Keep reading until "Over" is input
-            while (!line.equals("Over")) {
-                try {
-                    line = input.readLine();
-                    System.out.println(line);
-                } catch (IOException e1) {
-                    System.err.println("IO Exception");
-                    e1.printStackTrace();
-                } catch (NullPointerException e2) {
-                    System.err.println("Client did not send any message");
-                    e2.printStackTrace();
-                }
+
+            String targetLang = request.split(" ")[0];
+            String textToTranslate = request.split(" ")[1];
+            String targetPort = request.split(" ")[2];
+
+            log("target lang: " + targetLang);
+            log("text to translate: " + textToTranslate);
+            log("target port: " + targetPort);
+
+            URL url = new URL(API_ENDPOINT);
+            HttpURLConnection httpURLConnection = (HttpURLConnection) url.openConnection();
+            httpURLConnection.setRequestMethod("POST");
+            httpURLConnection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+            httpURLConnection.setRequestProperty("Authorization", "DeepL-Auth-Key " + API_KEY);
+
+            String data = "source_lang=" + sourceLang + "&target_lang=" + targetLang + "&text=" + URLEncoder.encode(textToTranslate, "UTF-8");
+            httpURLConnection.setDoOutput(true);
+            OutputStream os = httpURLConnection.getOutputStream();
+            os.write(data.getBytes("UTF-8"));
+            os.close();
+
+            BufferedReader reader = new BufferedReader(new InputStreamReader(httpURLConnection.getInputStream()));
+            String line;
+            StringBuilder response = new StringBuilder();
+            while ((line = reader.readLine()) != null) {
+                response.append(line);
             }
 
-            serverRunning = false;
+            reader.close();
+            System.out.println(response);
+
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode json = mapper.readTree(String.valueOf(response));
+
+            log(String.valueOf(json.path("translations").get(0).path("text")).replace("\"", ""));
+            return String.valueOf(json.path("translations").get(0).path("text")).replace("\"", "");
+    }
+
+
+    public void closeConnection() {
+        try {
             input.close();
             output.close();
+            serverSocket.close();
 
         } catch (IOException e1) {
-            System.err.println("IO Exception in serviceRequests() method");
+            System.err.println("IO Exception while closing connection");
             e1.printStackTrace();
         }
+    }
+
+    private void writeResponse(String message) {
+        if (message != null) {
+//            output.write(message + "\n");
+            output.println(message);
+        }
+    }
+
+    private void initializeMapWithPortsLanguages(HashMap<String, String> map) {
+        map.put("EN", "10001");
+        map.put("FR", "10002");
     }
 
     public static void log(String message) {
@@ -84,11 +136,20 @@ public class MainServer extends Thread {
     }
 
 
-    public static void main(String[] args)   {
-        // tutaj musimy stworzyc wiele obiektow
+    public static void main(String[] args) {
+        ServerSocket serverSocket = null;
 
-        MainServer mainServer = new MainServer();
-        mainServer.start();
+        try {
+            serverSocket = new ServerSocket();
+            InetSocketAddress isa = new InetSocketAddress(host, port);
+            serverSocket.bind(isa);
+
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        new MainServer(serverSocket);
+
     }
-
 }

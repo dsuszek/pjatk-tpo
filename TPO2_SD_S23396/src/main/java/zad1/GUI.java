@@ -54,9 +54,12 @@ public class GUI extends Application {
         );
 
         confirmButton.setOnAction((ActionEvent e) -> {
-                    wordToBeTranslatedInput.setText("");
-                    translation.setText("");
+            String data = wordToBeTranslatedInput.getText();
 
+
+            wordToBeTranslatedInput.setText("");
+            translation.setText("");
+//
 
                 }
         );
@@ -66,7 +69,7 @@ public class GUI extends Application {
         );
 
 
-        Scene scene = new Scene(pane, 1200, 800);
+        Scene scene = new Scene(pane, 800, 600);
         stage.setScene(scene);
         stage.show();
     }

@@ -1,59 +1,53 @@
 package zad1;
 
 import java.io.*;
-import java.net.Socket;
-import java.net.UnknownHostException;
+import java.net.*;
+import java.nio.charset.StandardCharsets;
+import java.util.Scanner;
 
 public class ClientStart extends Thread {
 
     private Socket clientStartSocket;
-    private BufferedReader input;
     private PrintWriter output;
+    private BufferedReader input;
+    private String host;
+    private int port;
+
+    public ClientStart(String host, int port){
+        try {
+            clientStartSocket = new Socket(host, port);
+            output = new PrintWriter(clientStartSocket.getOutputStream(), true);
+            input = new BufferedReader(
+                    new InputStreamReader(
+                            clientStartSocket.getInputStream()
+                    )
+            );
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
 
     // Klient przekazuje do serwera głównego zapytanie w postaci:
     // {"polskie słowo do przetłumaczenia", "kod języka docelowego", port}.
 
-    public void start() {
-
-        log("inside method start()");
-        String serverHost = "localhost";
-        int mainServerPort = 9000;
+    public void makeRequest(String request) {
 
         // Establish a connection
         try {
 
-            log("Trying to connect to server socket with parameters: host - " + serverHost + " and port " + mainServerPort);
-            clientStartSocket = new Socket(serverHost, mainServerPort);
-            log("Connected");
+            log("Request: " + request);
 
-            input = new BufferedReader (
-//                    new InputStreamReader(clientStartSocket.getInputStream()));
-                    new InputStreamReader(System.in));
+            // Communication
+            output.println(request);
+            // Reading response from server
+            String response = input.readLine();
+            log("Response from server: " + response);
 
-            output = new PrintWriter (
-                    new OutputStreamWriter(clientStartSocket.getOutputStream()), true);
-
-            log("Streams created");
-
-
-        } catch (UnknownHostException e1) {
-            System.err.println("Unknown host");
-            e1.printStackTrace();
-        } catch (IOException e2) {
-            System.err.println("IO Exception");
-            e2.printStackTrace();
-            return;
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-
-        // String to read message from input
-        String line = "";
-
-        while (!line.equals("Over")) {
-            output.println(line);
-        }
-
-        closeConnection();
     }
 
     public void closeConnection(){
@@ -62,18 +56,19 @@ public class ClientStart extends Thread {
             output.close();
             clientStartSocket.close();
         } catch (IOException e1) {
-            System.err.println("IO Exception");
+            System.err.println("IO Exception while closing connection");
             e1.printStackTrace();
         }
     }
 
     public static void log(String message) {
-        System.out.println("[C]: " + message);
+        System.out.println("[Client]: " + message);
     }
 
     public static void main(String[] args) {
-        ClientStart clientStart = new ClientStart();
+        ClientStart clientStart = new ClientStart("localhost", 10000);
         clientStart.start();
+        clientStart.makeRequest("EN pies 10412");
     }
 
 }
