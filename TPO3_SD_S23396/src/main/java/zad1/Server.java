@@ -1,5 +1,7 @@
 package zad1;
 
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -12,6 +14,7 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.Charset;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class Server {
 
@@ -19,13 +22,7 @@ public class Server {
     private int port;
     private ArrayList<SocketChannel> clients;
 
-
-    public Server(InetAddress host, int port) {
-        this.host = host;
-        this.port = port;
-    }
-
-    private static Map<String, String> mainServerData = new HashMap<>();
+    private static Map<String, String> mainServerData = new ConcurrentHashMap<>();
 
     // charset for coding & decoding the buffers
     private Charset charset = Charset.forName("ISO-8859-2");
@@ -36,17 +33,17 @@ public class Server {
     // request to be processed
     private StringBuffer reqString = new StringBuffer();
 
+    public Server(InetAddress host, int port) {
+        this.host = host;
+        this.port = port;
+    }
+
     public static Map<String, String> getMainServerData() {
         return mainServerData;
     }
 
     public void connect(){
         try {
-            mainServerData.put("ITEM1", "sporteffew veverv vre");
-            mainServerData.put("ITEM2", "sporfefteffew veverv vre");
-            mainServerData.put("ITEM3", "fewf veverv vre");
-            mainServerData.put("ITEM4", "erwerwr veverv vre");
-
             ServerSocketChannel serverSocketChannel = ServerSocketChannel.open(); // connection opened
             InetSocketAddress isa = new InetSocketAddress(host, port); // binds the channel's socket to a local address
             serverSocketChannel.socket().bind(isa);
@@ -174,7 +171,7 @@ public class Server {
                 // action "remove topic" - code 1 (2 parameters)
 
                 if(actualRequest.length < 2) {
-                    writeResp(socketChannel, "Not enough arguments provided. Please check that.");
+                    sendString(socketChannel, "Not enough arguments provided. Please check that.");
                     log("Not enough arguments provided. Please check that.");
                 }
                 commandCode = actualRequest[0];
@@ -183,14 +180,14 @@ public class Server {
                 if(mainServerData.containsKey(keyOfTopic)) {
                     mainServerData.remove(keyOfTopic);
                 } else {
-                    writeResp(socketChannel, "Topic not available.");
+                    sendString(socketChannel, "Topic not available.");
                     log("Topic not available");
                 }
             } else if(command.startsWith("2")) {
                 // action "add topic" - code 2 (3 parameters)
 
                 if(actualRequest.length < 3) {
-                    writeResp(socketChannel, "Not enough arguments provided. Please check that.");
+                    sendString(socketChannel, "Not enough arguments provided. Please check that.");
                     log("Not enough arguments provided. Please check that.");
                 } else {
                     commandCode = actualRequest[0];
@@ -203,7 +200,7 @@ public class Server {
                 // action "update topic" - code 3 (3 parameters)
 
                 if(actualRequest.length < 3) {
-                    writeResp(socketChannel, "Not enough arguments provided. Please check that.");
+                    sendString(socketChannel, "Not enough arguments provided. Please check that.");
                     log("Not enough arguments provided. Please check that.");
                 } else {
                     commandCode = actualRequest[0];
@@ -223,9 +220,9 @@ public class Server {
                 for(int i = 0; i < allTopics.size(); i++) {
                     log("Topic: " + allTopics.get(i));
                 }
-                writeResp(socketChannel, mainServerData.keySet().stream().toString());
+                sendString(socketChannel, String.join(",", allTopics));
             } else {
-                writeResp(socketChannel, "Unknown command code. Please check that.");
+                sendString(socketChannel, "Unknown command code. Please check that.");
             }
 
         } catch (IOException e1) {
@@ -237,18 +234,22 @@ public class Server {
 
     private StringBuffer remsg = new StringBuffer(); // Odpowiedź
 
-    private void writeResp(SocketChannel sc, String addMsg)
+    private void sendString(SocketChannel sc, String msg)
             throws IOException {
         remsg.setLength(0);
         remsg.append(' ');
         remsg.append('\n');
-        if (addMsg != null) {
-            remsg.append(addMsg);
+
+        if (msg != null) {
+            remsg.append(msg);
             remsg.append('\n');
         }
+
+        log("I'm sending the following response: " + remsg);
         ByteBuffer buf = charset.encode(CharBuffer.wrap(remsg));
         sc.write(buf);
     }
+
 
     public void addTopic(String topic, String description) {
         mainServerData.put(topic, description);

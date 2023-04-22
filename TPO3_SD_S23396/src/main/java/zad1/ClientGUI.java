@@ -10,20 +10,21 @@ import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.*;
 
 public class ClientGUI extends Application {
 
 
     private VBox pane;
-    private Map<String, String> mainServerData = Server.getMainServerData();
-    private List<String> listOfAvailableTopics = new ArrayList<>();
-    private List<String> listOfSubscribedTopics = new ArrayList<>();
+    private Client client;
 
     @Override
-    public void start(Stage stage) {
+    public void start(Stage stage) throws UnknownHostException {
 
-        listOfAvailableTopics.addAll(mainServerData.keySet());
+        client = new Client(InetAddress.getByName("localhost"), 10000);
 
         TextField addTopicName = new TextField();
         addTopicName.setPromptText("Please enter name of topic you would like to subscribe.");
@@ -35,20 +36,35 @@ public class ClientGUI extends Application {
 
         Button subscribeTopicButton = new Button("Subscribe topic");
         Button unsubscribeTopicButton = new Button("Unsubscribe topic");
+        Button showAllTopicsBtn = new Button("Show all topics");
 
-        ListView listView = new ListView(FXCollections.observableList(listOfAvailableTopics));
+        ListView listView = new ListView(FXCollections.observableList(client.getListOfAvailableTopics()));
         listView.setEditable(true);
         listView.setPrefSize(100, 100);
 
         subscribeTopicButton.setOnAction((ActionEvent e1) -> {
-            listOfSubscribedTopics.add(addTopicName.getText());
+            client.subscribeTopic(addTopicName.getText());
+            try {
+                client.sendRequest("6 " + addTopicName.getText());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         });
 
 
         unsubscribeTopicButton.setOnAction((ActionEvent e2) -> {
             String keyTopicToBeUnsubscribed = (String) listView.getSelectionModel().getSelectedItem();
 
-            listOfSubscribedTopics.remove(keyTopicToBeUnsubscribed);
+            client.unsubscribeTopic(keyTopicToBeUnsubscribed);
+        });
+
+        // action "show all topics" - code 5 (1 parameter)
+        showAllTopicsBtn.setOnAction((ActionEvent e1 ) -> {
+            try {
+                client.sendRequest("5");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         });
 
 
@@ -58,7 +74,8 @@ public class ClientGUI extends Application {
         pane.getChildren().addAll(
                 listView,
                 subscribeTopicButton,
-                unsubscribeTopicButton
+                unsubscribeTopicButton,
+                showAllTopicsBtn
         );
 
         Scene scene = new Scene(pane, 800, 600);

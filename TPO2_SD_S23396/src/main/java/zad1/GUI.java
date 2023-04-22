@@ -12,10 +12,11 @@ import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
+import java.net.InetSocketAddress;
+
 public class GUI extends Application {
     private VBox pane;
-    private final String[] languages = new String[]{"ENG", "FR", "NL"};
-
+    private final String[] languages = new String[]{"EN", "FR"};
 
     @Override
     public void start(Stage stage) {
@@ -40,8 +41,6 @@ public class GUI extends Application {
                 actionEvent -> languageCode.getText()
         );
 
-
-
         pane = new VBox(10);
         pane.setPadding(new Insets(10));
         pane.getChildren().addAll(
@@ -54,12 +53,14 @@ public class GUI extends Application {
         );
 
         confirmButton.setOnAction((ActionEvent e) -> {
-            String data = wordToBeTranslatedInput.getText();
 
+                    String word = wordToBeTranslatedInput.getText();
+                    String targetLanguage = languageCode.getText();
 
-            wordToBeTranslatedInput.setText("");
-            translation.setText("");
-//
+                    new ClientStart(targetLanguage + word + " " + ClientStart.getMyPort());
+
+                    wordToBeTranslatedInput.setText("");
+                    translation.setText("");
 
                 }
         );
@@ -67,7 +68,6 @@ public class GUI extends Application {
         pane.getChildren().addAll(
                 translation
         );
-
 
         Scene scene = new Scene(pane, 800, 600);
         stage.setScene(scene);

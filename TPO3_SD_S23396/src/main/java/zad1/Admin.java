@@ -125,6 +125,8 @@ public class Admin {
     public static void main(String[] args) throws IOException {
         Admin admin = new Admin(InetAddress.getByName("localhost"), 10000);
         admin.connect();
+        admin.sendRequest("2 sport fwfwfwg");
+        admin.sendRequest("2 sport fwff23r");
     }
 
 }

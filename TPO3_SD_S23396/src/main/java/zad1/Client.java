@@ -9,13 +9,33 @@ import java.nio.CharBuffer;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 public class Client {
 
     private InetAddress host;
     private int port;
     private SocketChannel channel = null;
-    private ArrayList<SocketChannel> subscribedTopics;
+    private Map<String, String> mainServerData = Server.getMainServerData();
+    private List<String> listOfAvailableTopics = new ArrayList<>();
+    private List<String> listOfSubscribedTopics = new ArrayList<>();
+
+    public List<String> getListOfAvailableTopics() {
+        return this.listOfAvailableTopics;
+    }
+
+    public List<String> getListOfSubscribedTopics() {
+        return this.listOfSubscribedTopics;
+    }
+
+    public void subscribeTopic(String topic) {
+        listOfSubscribedTopics.add(topic);
+    }
+
+    public void unsubscribeTopic(String topic) {
+        listOfSubscribedTopics.remove(topic);
+    }
 
     public Client(InetAddress host, int port) {
         this.host = host;
@@ -24,6 +44,11 @@ public class Client {
 
     public void connect() {
         try {
+
+            for (int i = 0; i < mainServerData.size(); i++) {
+                log("Topic " + i + " description: " + mainServerData.get(i));
+            }
+
             // creating the channel
             channel = SocketChannel.open();
 
@@ -49,6 +74,9 @@ public class Client {
         }
 
         log("I'm connected to the server ...");
+    }
+
+    public void readResponse() {
 
         Charset charset = Charset.forName("ISO-8859-2");
 
@@ -76,7 +104,9 @@ public class Client {
                     cbuf = charset.decode(inBuf);
                     String dataFromServer = cbuf.toString();
 
-                    log("Server just responded: " + dataFromServer);
+                    while (dataFromServer != "\n") {
+                        log("Server just responded: " + dataFromServer);
+                    }
                     cbuf.clear();
 
                     if (dataFromServer.equals("-1")) {
@@ -92,6 +122,8 @@ public class Client {
 
 
     public void sendRequest(String request) throws IOException {
+
+        log("I'm inside sendRequest method.");
         channel = SocketChannel.open();
 
         // setting non-blocking mode
@@ -100,16 +132,21 @@ public class Client {
         // binding the socket channel with host and port
         channel.connect(new InetSocketAddress(host, port));
 
-        while (!channel.finishConnect()) {}
+        while (!channel.finishConnect()) {
+        }
 
         // client writes to server
         Charset charset = Charset.forName("ISO-8859-2");
         CharBuffer cbuf = null;
         cbuf = CharBuffer.wrap(request + "\n");
         ByteBuffer outBuf = charset.encode(cbuf);
+        ByteBuffer inBuf = charset.encode(cbuf);
 
         try {
             channel.write(outBuf);
+            cbuf.clear();
+            channel.read(inBuf);
+            log("Answer from server: " + inBuf);
         } catch (IOException e1) {
             e1.printStackTrace();
         }
@@ -122,6 +159,8 @@ public class Client {
     public static void main(String[] args) throws IOException {
         Client client = new Client(InetAddress.getByName("localhost"), 10000);
         client.connect();
+        client.sendRequest("3 fwfwf fewfwe");
+        client.readResponse();
     }
 
 }
