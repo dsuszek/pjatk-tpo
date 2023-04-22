@@ -4,20 +4,8 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="c53a926b-1688-402e-b4e7-bf53f488384f" name="Changes" comment="Added connection to DeepL Api">
-      <change afterPath="$PROJECT_DIR$/src/main/java/zad1/ServerListener.java" afterDir="false" />
+    <list default="true" id="c53a926b-1688-402e-b4e7-bf53f488384f" name="Changes" comment="ServerListener improved - correctly passes requests to Client">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/zad1/ClientStart.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/zad1/ClientStart.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/zad1/GUI.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/zad1/GUI.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/zad1/MainServer.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/zad1/MainServer.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/zad1/ServerTranslator.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/zad1/ServerTranslator.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/zad1/GUI.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/zad1/GUI.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/target/classes/zad1/MainServer.class" beforeDir="false" afterPath="$PROJECT_DIR$/target/classes/zad1/MainServer.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../TPO3_SD_S23396/src/main/java/zad1/Admin.java" beforeDir="false" afterPath="$PROJECT_DIR$/../TPO3_SD_S23396/src/main/java/zad1/Admin.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../TPO3_SD_S23396/src/main/java/zad1/Client.java" beforeDir="false" afterPath="$PROJECT_DIR$/../TPO3_SD_S23396/src/main/java/zad1/Client.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../TPO3_SD_S23396/src/main/java/zad1/ClientGUI.java" beforeDir="false" afterPath="$PROJECT_DIR$/../TPO3_SD_S23396/src/main/java/zad1/ClientGUI.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../TPO3_SD_S23396/src/main/java/zad1/Main.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../TPO3_SD_S23396/src/main/java/zad1/Server.java" beforeDir="false" afterPath="$PROJECT_DIR$/../TPO3_SD_S23396/src/main/java/zad1/Server.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -176,7 +164,8 @@
       <workItem from="1680435535365" duration="449000" />
       <workItem from="1681815908655" duration="24291000" />
       <workItem from="1681973708688" duration="21040000" />
-      <workItem from="1682180543800" duration="343000" />
+      <workItem from="1682180543800" duration="728000" />
+      <workItem from="1682181278436" duration="14000" />
     </task>
     <task id="LOCAL-00001" summary="TPO2 - Outline">
       <created>1679251323199</created>
@@ -213,7 +202,14 @@
       <option name="project" value="LOCAL" />
       <updated>1681843580841</updated>
     </task>
-    <option name="localTasksCounter" value="6" />
+    <task id="LOCAL-00006" summary="ServerListener improved - correctly passes requests to Client">
+      <created>1682181209193</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1682181209193</updated>
+    </task>
+    <option name="localTasksCounter" value="7" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -234,7 +230,8 @@
     <MESSAGE value="TPO2 - Outline" />
     <MESSAGE value="TPO2 - v0.1" />
     <MESSAGE value="Added connection to DeepL Api" />
-    <option name="LAST_COMMIT_MESSAGE" value="Added connection to DeepL Api" />
+    <MESSAGE value="ServerListener improved - correctly passes requests to Client" />
+    <option name="LAST_COMMIT_MESSAGE" value="ServerListener improved - correctly passes requests to Client" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />
