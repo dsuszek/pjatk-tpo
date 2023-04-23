@@ -4,6 +4,7 @@ import java.io.*;
 import java.net.*;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.Executors;
 
 public class MainServer extends Thread {
 
@@ -15,12 +16,17 @@ public class MainServer extends Thread {
     private PrintWriter output;
     private BufferedReader input;
     private boolean isServerRunning;
-    private static final Map<String, String> languagesPortsMapping = new HashMap<>();
 
-    private static Map<String, Integer> languages = new HashMap<>() {{
+    public static Map<String, Integer> languages = new HashMap<>() {{
         put("EN", 10001);
         put("FR", 10002);
         put("DE", 10003);
+        put("FI", 10005);
+        put("PT", 10006);
+        put("UK", 10007);
+        put("TR", 10009);
+        put("IT", 10023);
+        put("ES", 10024);
     }};
 
     public MainServer(ServerSocket serverSocket) {
@@ -49,12 +55,6 @@ public class MainServer extends Thread {
                 e1.printStackTrace();
             }
         }
-
-//        try {
-//            serverSocket.close();
-//        } catch (IOException e2) {
-//            e2.printStackTrace();
-//        }
     }
 
     public void sendRequestToTranslationServer(Socket connection) throws IOException {
@@ -76,17 +76,42 @@ public class MainServer extends Thread {
         log("Target lang: " + targetLang);
         log("Request received: " + request);
 
+
+        Executors.newSingleThreadExecutor().execute(new Runnable() {
+            @Override
+            public void run() {
+                ServerSocket serverTranslatorSocket = null;
+                try {
+                    serverTranslatorSocket = new ServerSocket();
+                    InetSocketAddress isa = new InetSocketAddress(host, getPortOfTranslationServer(targetLang));
+                    serverTranslatorSocket.bind(isa);
+                    ServerTranslator serverTranslator = new ServerTranslator(serverTranslatorSocket);
+                    serverTranslator.start();
+
+                } catch (IOException e) {
+                    e.printStackTrace();
+                } finally {
+                    try {
+                        serverTranslatorSocket.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        });
+
+
         // Send request to server - translator
         translationServerSocket = new Socket(InetAddress.getByName("localhost"), translationServerPort);
 
         output = new PrintWriter(
                 translationServerSocket.getOutputStream(), true);
-        makeRequest(textToTranslate + " " + targetPort);
+        makeRequest(targetLang  + " " + textToTranslate + " " + targetPort);
     }
 
-    private int getPortOfTranslationServer(String targetLang) {
+     private int getPortOfTranslationServer(String targetLang) {
         return languages.get(targetLang);
-    }
+     }
 
 
     public void closeConnection() {
@@ -110,15 +135,10 @@ public class MainServer extends Thread {
 
     private void writeResponse(String message) {
         if (message != null) {
-//            output.write(message + "\n");
             output.println(message);
         }
     }
 
-    private void initializeMapWithPortsLanguages(HashMap<String, String> map) {
-        map.put("EN", "10001");
-        map.put("FR", "10002");
-    }
 
     public static void log(String message) {
         System.out.println("[Main server]: " + message);
@@ -131,7 +151,6 @@ public class MainServer extends Thread {
             serverSocket = new ServerSocket();
             InetSocketAddress isa = new InetSocketAddress(host, port);
             serverSocket.bind(isa);
-
 
         } catch (IOException e) {
             e.printStackTrace();

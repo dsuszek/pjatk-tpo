@@ -5,8 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.*;
 import java.net.*;
-import java.util.HashMap;
-import java.util.Map;
+
 
 public class ServerTranslator extends Thread {
 
@@ -15,10 +14,6 @@ public class ServerTranslator extends Thread {
     private static String host = "localhost";
     private PrintWriter output;
     private BufferedReader input;
-    private boolean isServerRunning;
-    private static final Map<String, String> languagesPortsMapping = new HashMap<>();
-    private static String sourceLang = "PL";
-    private static String targetLang = "EN";
     private static int port = 10001;
     private ServerSocket serverSocket;
     private static String request;
@@ -34,11 +29,8 @@ public class ServerTranslator extends Thread {
     }
 
     public void serviceConnections() {
-        isServerRunning = true;
 
-        // server works all the time
         try {
-
             Socket connection = serverSocket.accept();
             log("Connection established");
 
@@ -48,13 +40,6 @@ public class ServerTranslator extends Thread {
             System.err.println("IO Exception");
             e1.printStackTrace();
         }
-
-
-//        try {
-//            serverSocket.close();
-//        } catch (IOException e2) {
-//            e2.printStackTrace();
-//        }
     }
 
     public String sendRequestToTranslationServer(Socket connection) throws IOException {
@@ -67,9 +52,11 @@ public class ServerTranslator extends Thread {
 
         // reading the requests
         request = input.readLine();
-        String textToTranslate = request.split(" ")[0];
+        String targetLang = request.split(" ")[0];
+        String textToTranslate = request.split(" ")[1];
 
         log("Text to translate: " + textToTranslate);
+        log("Target lang: " + targetLang);
 
         URL url = new URL(API_ENDPOINT);
         HttpURLConnection httpURLConnection = (HttpURLConnection) url.openConnection();
@@ -77,7 +64,7 @@ public class ServerTranslator extends Thread {
         httpURLConnection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
         httpURLConnection.setRequestProperty("Authorization", "DeepL-Auth-Key " + API_KEY);
 
-        String data = "source_lang=" + sourceLang + "&target_lang=" + targetLang + "&text=" + URLEncoder.encode(textToTranslate, "UTF-8");
+        String data = "source_lang=PL&target_lang=" + targetLang + "&text=" + URLEncoder.encode(textToTranslate, "UTF-8");
         httpURLConnection.setDoOutput(true);
         OutputStream os = httpURLConnection.getOutputStream();
         os.write(data.getBytes("UTF-8"));
@@ -102,10 +89,9 @@ public class ServerTranslator extends Thread {
 
     public void sendTranslationToClient(String translation) throws IOException {
         String[] splitted = request.split(" ");
-        String targetPort = splitted[1];
-        int port = Integer.parseInt(splitted[1]);
+        int targetPort = Integer.parseInt(splitted[2]);
 
-        Socket connection = new Socket("localhost", port);
+        Socket connection = new Socket("localhost", targetPort);
 
         output = new PrintWriter(
                 connection.getOutputStream(), true);
